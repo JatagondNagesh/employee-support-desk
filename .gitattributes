@@ -1,0 +1,3 @@
+# Binary assets must be stored byte-exact. Without this, core.autocrlf=true
+# rewrites line endings inside the PDF and corrupts it on checkout.
+*.pdf binary
