@@ -32,6 +32,8 @@ live in `data/requests/`.
 ```powershell
 # terminal 1 - python service (offline model double by default, no API key needed)
 cd python-service
+python -m venv venv
+venv\Scripts\activate
 pip install -r requirements.txt
 python -m uvicorn app.main:app --port 8000
 
@@ -43,8 +45,8 @@ mvn spring-boot:run
 ## Tests
 
 ```powershell
-cd python-service ; python -m pytest -q      # 29 tests
-cd spring-service ; mvn test                 # 15 tests
+cd python-service ; python -m pytest -q      # 37 tests
+cd spring-service ; mvn test                 # 16 tests
 ```
 
 Python tests cover policy outcomes, tenant/role access, effective dates, verbatim quotations,
