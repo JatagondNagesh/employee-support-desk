@@ -24,18 +24,42 @@ Containerised services on managed Kubernetes: one deployment per service plus wo
 gateway terminating TLS and enforcing authentication. Scale workers on queue depth. Rolling deploys,
 migrations gated in CI, secrets from a managed store.
 
+```mermaid
+flowchart LR
+    client[Client] --> gw[API gateway<br/>TLS + authN]
+    gw --> api[Spring Boot API<br/>caller context, validation]
+
+    api -->|answer| py[Python service<br/>retrieval + generation]
+    api -->|batch: 202| q[(Queue)]
+    api --> db[(Postgres<br/>batches, items, citations)]
+    api --> blob[(Encrypted object store<br/>uploads)]
+
+    q --> w[Workers]
+    w --> py
+    w --> db
+    w --> blob
+    w --> acl[Anti-corruption layer<br/>timeout + circuit breaker]
+    acl --> appr[Approval system<br/>slow, partly documented]
+
+    py --> corpus[(Versioned policy corpus)]
+    py -.-> model[Model provider<br/>or offline double]
+
+    w --> dlq[(Dead letter)]
+    api --> obs[Logs, metrics, traces<br/>IDs and codes only]
+    w --> obs
+```
+
 ## Main risks
 
 - **Personal information.** Encrypt in transit and at rest, restrict access by role, redact PII from
-  logs and traces (we already log only IDs and codes), set retention and deletion timelines, keep an
-  audit trail. Prompts must not leave the trust boundary unless the provider is contractually
-  covered.
-- **Tenant leakage.** Tenant and role stay server-derived from an authenticated token, with
-  automated tests and tenant filtering in the data layer.
-- **Prompt injection / over-trusting model output.** Keep status decisions in code and keep
-  validating citations against supplied evidence.
-- **Operational.** The slow approval system is the likely source of backlog. Needs per-dependency
-  SLOs, dead-letter handling, alerts on queue age and failure rate, dashboards keyed by batch and
+  logs (we already log only IDs and codes), set retention and deletion timelines, keep an audit
+  trail. Prompts must not leave the trust boundary unless the provider is contractually covered.
+- **Tenant leakage.** Tenant and role stay server-derived from an authenticated token, with tenant
+  filtering in the data layer and automated tests.
+- **Prompt injection / over-trusted model output.** Status decisions stay in code; citations stay
+  validated against eligible evidence.
+- **Operational.** The slow approval system is the likely backlog source: per-dependency SLOs,
+  dead-letter handling, alerts on queue age and failure rate, dashboards keyed by batch and
   document ID.
 
 ## What I would clarify first
